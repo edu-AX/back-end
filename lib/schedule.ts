@@ -34,9 +34,9 @@ export function unconfirmedAlerts(
   state: ClientState = EMPTY_CLIENT_STATE,
   changes: ChangeAlert[] = allChanges,
 ): ChangeAlert[] {
-  return changes.filter(
-    (c) => c.eventIds.includes(event.id) && event.changeAlertIds.includes(c.id) && !isChangeConfirmed(c, state),
-  );
+  // 기본 데이터는 validate 가 eventIds ↔ changeAlertIds 양방향을 맞춰 두므로 eventIds 만 보면 된다.
+  // (담당자가 추가한 변경(addedChanges)은 행사의 changeAlertIds 에 없으므로 eventIds 로만 연결)
+  return changes.filter((c) => c.eventIds.includes(event.id) && !isChangeConfirmed(c, state));
 }
 
 /**

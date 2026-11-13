@@ -21,6 +21,12 @@ export function eventsWithAdded(state: { addedEvents?: EventCard[] }): EventCard
   return [...events, ...(state.addedEvents ?? [])];
 }
 
+/** 기본 변경 알림 + 담당자가 "기준 업데이트 확인"에서 추가한 변경. 대시보드·캘린더·카드·인수인계에 넘길 목록 */
+export function changesWithAdded(state: { addedChanges?: ChangeAlert[] }): ChangeAlert[] {
+  const added = (state.addedChanges ?? []).filter((c) => !changes.some((b) => b.id === c.id));
+  return [...changes, ...added];
+}
+
 export const getEvent = (id: string) => events.find((e) => e.id === id);
 export const getGuideline = (id: string) => guidelines.find((g) => g.id === id);
 export const getChange = (id: string) => changes.find((c) => c.id === id);

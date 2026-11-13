@@ -1,0 +1,26 @@
+{
+  "sourceId": "SRC-MOE",
+  "title": "현장체험학습 교원 지원 방안",
+  "publisher": "교육부",
+  "publishedAt": "2026-05-28",
+  "url": "",
+  "summary": "현장체험학습 안전 보조인력 배치 기준을 확대하고, 교원 면책 범위를 넓히는 법 개정을 추진한다는 발표.",
+  "candidates": [
+    {
+      "id": "C-03",
+      "title": "현장체험학습 보조인력 배치 기준 확대",
+      "before": "학생 수 기준으로 배치",
+      "after": "학급 단위 배치로 확대 (추진)",
+      "status": "추진 중",
+      "eventIds": ["E-02", "E-05", "E-07"],
+      "stepId": "safety_staff",
+      "source": "교육부 현장체험학습 지원 방안 (2026.5.28)",
+      "guidelineId": "G-NAT-04"
+    },
+    {
+      "id": "C-02-dup",
+      "matchesExisting": "C-02",
+      "title": "현장체험학습 교사 면책 기준 개정 추진"
+    }
+  ]
+}

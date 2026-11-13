@@ -1,5 +1,5 @@
 // 자료(행사 카드·지침·변경 알림)를 LLM용 텍스트와 출처 칩(SourceRef)으로 바꾼다.
-import { changes, events, getChange, getEvent, getGuideline, guidelines } from "../data";
+import { changes, changesWithAdded, events, getChange, getEvent, getGuideline, guidelines } from "../data";
 import { formatDDay } from "../dates";
 import { computeSchedule } from "../schedule";
 import type { ClientState, DateString, SourceRef } from "../types";
@@ -77,6 +77,7 @@ export function toSourceRefs(ids: string[], focusEventId?: string): SourceRef[] 
  */
 export function buildContext(today: DateString, state: ClientState = EMPTY_CLIENT_STATE): string {
   const parts: string[] = [];
+  const allChanges = changesWithAdded(state);
 
   parts.push(`## 오늘 날짜: ${today}`);
 
@@ -115,7 +116,8 @@ export function buildContext(today: DateString, state: ClientState = EMPTY_CLIEN
       const where = n.stepId ? schedule.find((s) => s.id === n.stepId)?.label : undefined;
       lines.push(`  - ${n.year} 전임자 메모${where ? ` [${where}]` : ""}: ${n.note}`);
     }
-    if (e.changeAlertIds.length) lines.push(`  - 걸린 변경 알림: ${e.changeAlertIds.join(", ")}`);
+    const linked = allChanges.filter((c) => c.eventIds.includes(e.id)).map((c) => c.id);
+    if (linked.length) lines.push(`  - 걸린 변경 알림: ${linked.join(", ")}`);
     parts.push(lines.join("\n"));
   }
 
@@ -129,8 +131,8 @@ export function buildContext(today: DateString, state: ClientState = EMPTY_CLIEN
     );
   }
 
-  parts.push("## 변경 알림 (작년 → 올해)");
-  for (const c of changes) {
+  parts.push("## 변경 알림 (작년 → 올해, 담당자가 기준 업데이트 확인에서 추가한 것 포함)");
+  for (const c of allChanges) {
     parts.push(
       `[${c.id}] ${c.title} — 상태: ${c.status}\n  - 이전: ${c.before}\n  - 이후: ${c.after}\n  - 관련 행사: ${c.eventIds.join(", ")}, 근거 지침: ${c.guidelineId}, 출처: ${c.source}`,
     );

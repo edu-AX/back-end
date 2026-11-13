@@ -134,6 +134,43 @@ export interface ChangeAlert {
   guidelineId: string;
   /** 데이터 상의 기본값. 실제 "확인함" 여부는 프론트 localStorage(ClientState)가 우선 */
   confirmed: boolean;
+  /** 기준 업데이트 확인으로 찾은 변경: 발표일·원문 링크 (없으면 빈 값) */
+  publishedAt?: DateString;
+  url?: string;
+}
+
+// ---------- 공식 기준 변경 감지 (lib/updates/*, POST /api/updates/check) ----------
+export interface OfficialSource {
+  id: string; // "SRC-MOE"
+  name: string;
+  type: "law-api" | "press-list" | "portal" | "office-notice";
+  url: string;
+}
+
+/** 출처에서 가져온 문서 한 건 (시연: data/update-snapshots/*.json) */
+export interface OfficialDoc {
+  sourceId: string;
+  title: string;
+  publisher: string;
+  publishedAt: DateString;
+  url: string;
+  /** 직접 쓴 한 줄 요약 (원문 문장 복사 금지) */
+  summary: string;
+  candidates: (Omit<ChangeAlert, "confirmed"> | { id: string; matchesExisting: string; title: string })[];
+}
+
+export interface UpdateCheckResult {
+  checkedAt: string; // ISO 시각
+  sources: { id: string; name: string; status: "checked" | "found"; newDocs: number }[];
+  /** 새로 찾은 기준 변경 후보 — 담당자가 "변경 알림에 추가"해야 반영된다 */
+  found: ChangeAlert[];
+  /** 이미 등록된(또는 이미 추가한) 변경 id */
+  alreadyKnown: string[];
+  /** true 면 저장해 둔 시연용 스냅샷으로 돌린 결과 */
+  snapshot: boolean;
+  snapshotLabel?: string;
+  /** 후보를 만든 방식: 스냅샷 그대로 / AI 정리 */
+  mode: "snapshot" | "llm";
 }
 
 // ---------- 프론트 localStorage 상태 ----------

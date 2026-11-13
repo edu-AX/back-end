@@ -31,6 +31,17 @@
   - `data/*.json` 4개
 - 이 파일들 안에서 import 경로를 바꾸거나 서버 전용 코드(`server-only`)를 넣으면 프론트가 깨져요. 서버 전용 코드는 `lib/chat/llm.ts`, `lib/env.ts`, `lib/upload/extract.ts`처럼 공유 목록 밖의 파일에 두세요.
 
+## 공식 기준 변경 감지 (`POST /api/updates/check`)
+
+공식 출처(`data/official-sources.json`: 국가법령정보센터, 교육부 보도자료, 학생부 종합지원포털, 인천교육청 공지)를 확인해요. AI가 **기준 변경 후보**를 영향 행사·단계, 시행/추진 중으로 정리해요.
+
+- **담당자가 화면에서 "변경 알림에 추가"해야 반영돼요.** AI가 기준 값을 자동으로 덮어쓰지 않아요.
+- **지금은 시연용 스냅샷으로 동작해요:** `data/update-snapshots/moe-2026-05-28.json` (교육부 현장체험학습 교원 지원 방안).
+  - 실제 수집은 `lib/updates/sources.ts`의 `lawApiAdapter`(국가법령정보센터 Open API)와 `pressListAdapter`(정책브리핑 교육부 부처뉴스)를 구현하면 돼요. 지금은 `not implemented`예요.
+  - `DEMO_MODE`이거나 키가 없으면 스냅샷 후보를 그대로 써요. 키가 있으면 Gemini가 요약을 읽고 후보를 만들고(zod 검증), 실패하면 스냅샷으로 대체해요.
+- `// TODO: 정책브리핑 원문 링크` — 스냅샷 `url`이 비어 있어서 화면의 "원문 보기"가 비활성이에요. 원문 링크를 찾아서 `data/update-snapshots/moe-2026-05-28.json`의 `url`에 채우세요.
+- 스냅샷 `summary`는 직접 쓴 한 줄 요약이에요. **보도자료 원문 문장은 넣지 않아요.**
+
 ## 실행
 
 ```bash

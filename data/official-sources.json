@@ -1,0 +1,6 @@
+[
+  { "id": "SRC-LAW", "name": "국가법령정보센터 (학교안전법 개정 이력)", "type": "law-api", "url": "https://open.law.go.kr" },
+  { "id": "SRC-MOE", "name": "교육부 보도자료 (정책브리핑)", "type": "press-list", "url": "https://korea.kr/news/ministryNewsList.do?repCode=A00002" },
+  { "id": "SRC-STAR", "name": "학교생활기록부 종합지원포털", "type": "portal", "url": "https://star.moe.go.kr" },
+  { "id": "SRC-ICE", "name": "인천광역시교육청 공지", "type": "office-notice", "url": "https://www.ice.go.kr" }
+]
