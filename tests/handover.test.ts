@@ -129,13 +129,14 @@ describe("넘기기 작성률", () => {
 });
 
 describe("결과보고서 → 내년 카드: 작년 기록으로 넘어간다", () => {
-  const card = draftToEventCard(DEMO_DRAFT, { id: "U-1", nextEventDate: "2027-05-12", year: 2026, author: "2026 담당 교사" });
+  // 시연용 고정 초안: 1학년 대학·직업 박람회 견학 (2026-10-16, 교외 1일형)
+  const card = draftToEventCard(DEMO_DRAFT, { id: "U-1", nextEventDate: "2027-10-15", year: 2026, author: "2026 담당 교사" });
 
   it("단계별 실제 날짜·메모가 lastYear 로", () => {
-    expect(card.lastYear).toMatchObject({ year: 2026, eventDate: "2026-05-13", owner: "2026 담당 교사" });
-    expect(card.lastYear!.steps.vendor?.memo).toContain("비상구");
+    expect(card.lastYear).toMatchObject({ year: 2026, eventDate: "2026-10-16", owner: "2026 담당 교사" });
+    expect(card.lastYear!.steps.vendor?.memo).toContain("사전답사");
     const v = computeSchedule(card, TODAY).find((x) => x.id === "vendor")!;
-    expect(v.lastYear?.offsetDays).toBe(-60);
+    expect(v.lastYear?.offsetDays).toBe(-30);
   });
 
   it("주의점은 important 메모가 되어 인수인계 받기에 뜬다", () => {
