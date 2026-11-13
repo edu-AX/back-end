@@ -42,7 +42,20 @@ export function validateData(d: {
     if (e.officeRules && !guidelineIds.has(e.officeRules.sourceId))
       errors.push(`행사 ${e.id}: officeRules.sourceId ${e.officeRules.sourceId} 지침 없음`);
     for (const c of e.changeAlertIds) if (!changeIds.has(c)) errors.push(`행사 ${e.id}: 변경 알림 ${c} 없음`);
+    for (const n of e.handoverNotes) {
+      if (n.stepId && !tpl?.steps.some((s) => s.id === n.stepId))
+        errors.push(`행사 ${e.id}: 메모 "${n.note.slice(0, 10)}…"의 stepId ${n.stepId} 가 템플릿에 없음`);
+    }
+    if (e.lastYear) {
+      if (!isDateString(e.lastYear.eventDate)) errors.push(`행사 ${e.id}: lastYear.eventDate 형식 오류`);
+      for (const [k, v] of Object.entries(e.lastYear.steps)) {
+        if (!tpl?.steps.some((s) => s.id === k)) errors.push(`행사 ${e.id}: lastYear 단계 ${k} 가 템플릿에 없음`);
+        if (v?.actualDate !== null && v?.actualDate !== undefined && !isDateString(v.actualDate))
+          errors.push(`행사 ${e.id}: lastYear.${k}.actualDate 형식 오류`);
+      }
+    }
   }
+  dup(d.events.flatMap((e) => e.handoverNotes.map((n) => n.id).filter((x): x is string => !!x)), "메모");
 
   for (const c of d.changes) {
     if (!guidelineIds.has(c.guidelineId)) errors.push(`변경 ${c.id}: 지침 ${c.guidelineId} 없음`);

@@ -1,9 +1,9 @@
 // 결과보고서(마스킹된 텍스트) → 행사 카드 초안
 import { z } from "zod";
-import { isDateString } from "../dates";
+import { addYears, isDateString } from "../dates";
 import { maskPersonalInfo } from "../masking";
 import { DRAFT_OUTPUT_SCHEMA, DRAFT_SYSTEM_PROMPT } from "../chat/prompt";
-import type { EventCard, EventDraft } from "../types";
+import type { EventCard, EventDraft, HandoverNote, LastYearRecord } from "../types";
 import { STEP_IDS } from "../types";
 
 const RawDraft = z.object({
@@ -60,7 +60,15 @@ export function draftToEventCard(
   draft: EventDraft,
   opts: { id: string; nextEventDate: string; year: number; author?: string },
 ): EventCard {
-  const notes = [draft.handoverNote, ...draft.cautions].filter((s) => s.trim());
+  const author = opts.author ?? "전임자";
+  const notes: HandoverNote[] = [
+    ...(draft.handoverNote.trim() ? [{ year: opts.year, note: draft.handoverNote.trim(), author }] : []),
+    // 주의점은 다음 담당자가 "인수인계 받기"에서 꼭 보도록 important
+    ...draft.cautions.filter((s) => s.trim()).map((note) => ({ year: opts.year, note: note.trim(), author, important: true })),
+  ];
+  // 단계별 실제 날짜·메모는 "작년 기록"으로 넘어간다 → 내년 체크리스트 각 단계 옆에 "작년엔 ~" 으로 보임
+  const steps: LastYearRecord["steps"] = {};
+  for (const s of draft.steps) steps[s.stepId] = { actualDate: s.actualDate, memo: s.memo || undefined };
   return {
     id: opts.id,
     department: "창의적체험활동부",
@@ -69,7 +77,14 @@ export function draftToEventCard(
     scope: draft.scope,
     eventDate: opts.nextEventDate,
     template: draft.template,
-    handoverNotes: notes.map((note) => ({ year: opts.year, note, author: opts.author ?? "전임자" })),
+    handoverNotes: notes,
+    lastYear: {
+      year: opts.year,
+      eventDate: draft.eventDate ?? addYears(opts.nextEventDate, -1),
+      owner: author,
+      summary: draft.handoverNote.trim() || draft.cautions[0] || "",
+      steps,
+    },
     stepStatus: {},
     changeAlertIds: [],
     updatedBy: opts.author ?? "전임자",

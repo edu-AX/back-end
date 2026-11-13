@@ -101,8 +101,20 @@ export function buildContext(today: DateString, state: ClientState = EMPTY_CLIEN
           ` (출처 ${r.sourceId})`,
       );
     }
+    const ly = e.lastYear;
+    if (ly) {
+      lines.push(`  - 작년(${ly.year}) 실제 기록: 행사일 ${ly.eventDate}, ${ly.owner}. ${ly.summary}`);
+      if (ly.partners?.length) lines.push(`    · 함께한 업체·기관: ${ly.partners.join(", ")}`);
+      for (const s of schedule) {
+        const r = ly.steps[s.id];
+        if (r) lines.push(`    · ${s.label}: ${r.actualDate ?? "날짜 기록 없음"}${r.memo ? ` — ${r.memo}` : ""}${r.hadIssue ? " (문제 있었음)" : ""}`);
+      }
+    }
     const notes = [...e.handoverNotes, ...(state.extraNotes[e.id] ?? [])];
-    for (const n of notes) lines.push(`  - ${n.year} 전임자 메모: ${n.note}`);
+    for (const n of notes) {
+      const where = n.stepId ? schedule.find((s) => s.id === n.stepId)?.label : undefined;
+      lines.push(`  - ${n.year} 전임자 메모${where ? ` [${where}]` : ""}: ${n.note}`);
+    }
     if (e.changeAlertIds.length) lines.push(`  - 걸린 변경 알림: ${e.changeAlertIds.join(", ")}`);
     parts.push(lines.join("\n"));
   }

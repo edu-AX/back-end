@@ -46,9 +46,37 @@ export interface OfficeRules {
   sourceId: string; // guidelines.json 의 id
 }
 export interface HandoverNote {
+  /** 고정 id (data 에 적힌 메모). 화면에서 추가한 메모는 없을 수 있음 → noteKey() 사용 */
+  id?: string;
   year: number;
   note: string;
   author?: string; // 가상 이름 또는 "전임자"
+  /** 이 메모가 걸리는 단계. 없으면 행사 전체에 대한 메모 */
+  stepId?: StepId;
+  /** true 면 "인수인계 받기" 화면의 핵심 주의점에 뜬다 */
+  important?: boolean;
+}
+
+/** 작년에 이 행사를 실제로 어떻게 했는지 (전임자 기록) */
+export interface LastYearStep {
+  /** 실제로 한 날짜. 모르면 null */
+  actualDate: DateString | null;
+  /** 그때 한 일·결과 한 줄 (예: "○○관광 계약, 예산 내") */
+  memo?: string;
+  /** 문제가 있었으면 true → 화면에서 강조 */
+  hadIssue?: boolean;
+}
+export interface LastYearRecord {
+  year: number;
+  eventDate: DateString;
+  /** 담당자 표시용 (실명 대신 "2026 담당 교사" 같은 표기) */
+  owner: string;
+  /** 한두 문장 총평 */
+  summary: string;
+  participants?: number;
+  /** 업체·기관명 (개인 이름·연락처는 넣지 않음) */
+  partners?: string[];
+  steps: Partial<Record<StepId, LastYearStep>>;
 }
 export interface EventCard {
   id: string; // "E-07"
@@ -62,6 +90,8 @@ export interface EventCard {
   template: TemplateId;
   officeRules?: OfficeRules;
   handoverNotes: HandoverNote[];
+  /** 작년 실제 기록. 없으면 올해가 첫 해 */
+  lastYear?: LastYearRecord;
   stepStatus: Partial<Record<StepId, StepState>>;
   changeAlertIds: string[];
   /** 카드에 보여줄 "누가 언제 수정" (보안 설계: 수정 이력) */
@@ -115,6 +145,10 @@ export interface ClientState {
   confirmedChangeIds: string[];
   /** 결과보고서 업로드로 만든 내년도 행사 카드 (draftToEventCard 결과) */
   addedEvents: EventCard[];
+  /** "인수인계 받기" 화면에서 읽고 확인한 메모 (noteKey 값) */
+  acknowledgedNoteKeys?: string[];
+  /** "인수 확인" 버튼을 누른 날. 없으면 아직 인수 전 → 첫 화면에 인수인계 받기 */
+  handoverAcceptedAt?: DateString;
 }
 export const EMPTY_CLIENT_STATE: ClientState = {
   stepStatus: {},
@@ -136,6 +170,87 @@ export interface ScheduledStep {
   overdue: boolean;
   /** 이 단계에 걸린 확인 안 한 변경 알림 */
   alertIds: string[];
+  /** 작년에 이 단계를 실제로 한 기록 (있으면) */
+  lastYear?: LastYearStep & {
+    /** 작년 행사일 기준 며칠 전/후에 했는지 (음수=전) */
+    offsetDays: number | null;
+    /** 올해 권장 마감보다 늦게 했으면 양수 (일) */
+    lateByDays: number | null;
+  };
+  /** 이 단계에 붙은 전임자 메모 */
+  notes: HandoverNote[];
+}
+
+// ---------- 인수인계 (lib/handover.ts) ----------
+export interface HandoverPoint {
+  key: string; // noteKey
+  eventId: string;
+  eventTitle: string;
+  stepId?: StepId;
+  stepLabel?: string;
+  note: string;
+  year: number;
+  author?: string;
+  acknowledged: boolean;
+}
+
+export interface HandoverBrief {
+  /** 전임자 표기 목록 (예: ["2026 담당 교사"]) */
+  from: string[];
+  fromYear: number | null;
+  accepted: boolean;
+  acceptedAt?: DateString;
+  /** 꼭 알아야 할 핵심 주의점 (important 메모) */
+  keyPoints: HandoverPoint[];
+  /** 작년과 달라진 기준 (확인 안 한 변경 알림 먼저) */
+  changes: {
+    id: string;
+    title: string;
+    before: string;
+    after: string;
+    status: GuidelineStatus;
+    eventIds: string[];
+    confirmed: boolean;
+  }[];
+  /** 행사별 한 줄: 작년엔 어땠고 올해는 언제인지 */
+  events: {
+    eventId: string;
+    title: string;
+    scope: Scope;
+    eventDate: DateString;
+    dDay: number;
+    lastYearDate: DateString | null;
+    lastYearSummary: string | null;
+    noteCount: number;
+    issueCount: number;
+  }[];
+  /** 확인한 메모 수 / 전체 메모 수 */
+  progress: { acknowledged: number; total: number };
+}
+
+/** "작년 이맘때" 항목 */
+export interface LastYearThisTime {
+  eventId: string;
+  eventTitle: string;
+  stepId: StepId;
+  stepLabel: string;
+  lastYearDate: DateString;
+  /** 오늘과 작년 날짜(1년 뒤로 옮긴 값) 차이. 음수면 작년엔 이미 지난 시점 */
+  daysFromToday: number;
+  memo?: string;
+  hadIssue?: boolean;
+}
+
+/** 넘기기 모드: 행사별 인수인계 작성률 */
+export interface HandoverCoverage {
+  eventId: string;
+  title: string;
+  /** 단계 중 기록(실제 날짜 또는 메모)이 있는 단계 수 */
+  recordedSteps: number;
+  totalSteps: number;
+  noteCount: number;
+  percent: number;
+  missingSteps: { stepId: StepId; label: string }[];
 }
 
 export interface CalendarItem {

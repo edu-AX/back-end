@@ -6,6 +6,7 @@ import type {
   ClientState,
   DateString,
   EventCard,
+  HandoverNote,
   ScheduledStep,
   StepId,
   StepState,
@@ -51,6 +52,7 @@ export function computeSchedule(
 ): ScheduledStep[] {
   const eventDate = effectiveEventDate(event, state);
   const alerts = unconfirmedAlerts(event, state, changes);
+  const allNotes = notesOf(event, state);
   return template.steps.map((step) => {
     const dueDate = addDays(eventDate, step.offsetDays);
     const st = stepState(event, step.id, state);
@@ -65,8 +67,32 @@ export function computeSchedule(
       overdue: st === "todo" && daysLeft < 0,
       // 행사 전체에 걸린 알림(stepId=null)은 단계에 붙이지 않고 카드 단위로 표시
       alertIds: alerts.filter((a) => a.stepId === step.id).map((a) => a.id),
+      lastYear: lastYearOfStep(event, step.id, step.offsetDays),
+      notes: allNotes.filter((n) => n.stepId === step.id),
     };
   });
+}
+
+/** 데이터 메모 + 화면에서 추가한 메모 */
+export function notesOf(event: EventCard, state: ClientState = EMPTY_CLIENT_STATE): HandoverNote[] {
+  return [...event.handoverNotes, ...(state.extraNotes[event.id] ?? [])];
+}
+
+/** 특정 단계에 묶이지 않은 메모 (카드 전체 메모 영역에 표시) */
+export function eventLevelNotes(event: EventCard, state: ClientState = EMPTY_CLIENT_STATE): HandoverNote[] {
+  return notesOf(event, state).filter((n) => !n.stepId);
+}
+
+function lastYearOfStep(event: EventCard, stepId: StepId, recommendedOffset: number): ScheduledStep["lastYear"] {
+  const ly = event.lastYear;
+  const rec = ly?.steps[stepId];
+  if (!ly || !rec) return undefined;
+  const offset = rec.actualDate ? diffDays(ly.eventDate, rec.actualDate) : null;
+  return {
+    ...rec,
+    offsetDays: offset,
+    lateByDays: offset === null ? null : offset - recommendedOffset,
+  };
 }
 
 /** 아직 안 끝난 첫 단계 (= "다음 단계") */

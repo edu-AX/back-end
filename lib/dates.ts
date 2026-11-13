@@ -19,6 +19,15 @@ export function addDays(date: DateString, days: number): DateString {
   return new Date(toUtcMs(date) + days * DAY_MS).toISOString().slice(0, 10);
 }
 
+/** 연도만 옮긴다. 2/29 → 평년이면 2/28 */
+export function addYears(date: DateString, years: number): DateString {
+  const [y, m, d] = date.split("-").map(Number);
+  const ny = y + years;
+  const leap = (ny % 4 === 0 && ny % 100 !== 0) || ny % 400 === 0;
+  const day = m === 2 && d === 29 && !leap ? 28 : d;
+  return `${ny}-${String(m).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
+}
+
 /** to - from (일). to 가 미래면 양수 */
 export function diffDays(from: DateString, to: DateString): number {
   return Math.round((toUtcMs(to) - toUtcMs(from)) / DAY_MS);

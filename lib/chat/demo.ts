@@ -3,7 +3,7 @@
 import { LEGAL_NOTE } from "./messages";
 
 export interface DemoAnswer {
-  key: "liability" | "record" | "consent" | "safetyStaff";
+  key: "liability" | "lastYear" | "record" | "consent" | "safetyStaff";
   match: RegExp;
   answer: string;
   sourceIds: string[];
@@ -19,6 +19,15 @@ export const DEMO_ANSWERS: DemoAnswer[] = [
       "그래서 지금은 현행 기준이 그대로 적용돼요.\n\n" +
       LEGAL_NOTE,
     sourceIds: ["G-NAT-02", "G-NAT-03", "C-02"],
+  },
+  {
+    key: "lastYear",
+    match: /(작년|전임|지난 ?해|예전).{0,12}(어떻게|뭐|무슨|문제|주의|했)/,
+    answer:
+      "작년 2학년 수학여행은 제주 2박 3일로 진행됐어요(176명). 전임 선생님이 꼭 남긴 건 두 가지예요. " +
+      "① 사전답사 때 숙소 비상구 확인을 놓쳐 4월에 다시 확인했으니, 올해는 사전답사(3월 13일 마감) 때 비상구·동선을 사진으로 남기세요. " +
+      "② 동의서 배부 전에 학부모 설명회를 먼저 하니 동의율이 86%까지 올랐대요.",
+    sourceIds: ["E-07"],
   },
   {
     key: "record",
