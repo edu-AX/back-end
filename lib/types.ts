@@ -145,6 +145,8 @@ export interface ClientState {
   confirmedChangeIds: string[];
   /** 결과보고서 업로드로 만든 내년도 행사 카드 (draftToEventCard 결과) */
   addedEvents: EventCard[];
+  /** "기준 업데이트 확인"에서 담당자가 "변경 알림에 추가"한 기준 변경 (changesWithAdded 로 합쳐 씀) */
+  addedChanges?: ChangeAlert[];
   /** "인수인계 받기" 화면에서 읽고 확인한 메모 (noteKey 값) */
   acknowledgedNoteKeys?: string[];
   /** "인수 확인" 버튼을 누른 날. 없으면 아직 인수 전 → 첫 화면에 인수인계 받기 */

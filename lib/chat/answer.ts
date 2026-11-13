@@ -2,7 +2,7 @@
 import { z } from "zod";
 import type { ChatRequest, ChatResponse, ClientState, DateString, SourceRef } from "../types";
 import { EMPTY_CLIENT_STATE } from "../types";
-import { findDemoAnswer } from "./demo";
+import { buildDemoAnswer } from "./demo";
 import { isLegalQuestion, isPersonalInfoQuestion } from "./guards";
 import { BLOCKED, DISCLAIMER, LEGAL_NOTE, LLM_DOWN, NOT_FOUND, PENDING_NOTE } from "./messages";
 import { buildChatUserMessage, CHAT_OUTPUT_SCHEMA, CHAT_SYSTEM_PROMPT } from "./prompt";
@@ -38,24 +38,45 @@ function addNotes(answer: string, question: string, sources: SourceRef[]): strin
   return out;
 }
 
-function demoResponse(question: string, mode: "demo" | "fallback", focusEventId?: string): ChatResponse {
-  const demo = findDemoAnswer(question);
+function demoResponse(question: string, mode: "demo" | "fallback", req: ChatRequest, deps: AnswerDeps): ChatResponse {
+  const demo = buildDemoAnswer(question, { focusEventId: req.focusEventId, today: deps.today, state: deps.state });
   if (!demo) {
     return respond({ answer: mode === "demo" ? NOT_FOUND : LLM_DOWN, notFound: true, mode });
   }
-  const sources = toSourceRefs(demo.sourceIds, focusEventId);
-  return respond({ answer: addNotes(demo.answer, question, sources), sources, mode });
+  const sources = toSourceRefs(demo.sourceIds, demo.eventId ?? req.focusEventId);
+  return respond({ answer: addNotes(demo.answer, question, sources), sources, notFound: demo.notFound, mode });
+}
+
+/**
+ * 담당자가 "변경 알림에 추가"한 기준 변경(state.addedChanges)이 질문 주제에 걸리면 안내를 덧붙인다.
+ * (예: 교육부 보조인력 배치 기준 확대 추진 → 안전요원 질문)
+ */
+const SAFETY_STAFF_Q = /(안전 ?요원|안전 ?인력|보조 ?인력|몇 ?명)/;
+export const ADDED_SAFETY_NOTE = "교육부가 보조인력 배치 기준 확대를 추진 중이에요. 변경 알림을 확인하세요.";
+
+function withAddedChangeNotes(res: ChatResponse, question: string, state?: ClientState): ChatResponse {
+  const added = state?.addedChanges ?? [];
+  if (res.mode === "blocked" || !SAFETY_STAFF_Q.test(question)) return res;
+  const hit = added.find((c) => c.stepId === "safety_staff");
+  if (!hit) return res;
+  const note = hit.id === "C-03" ? ADDED_SAFETY_NOTE : `${hit.title} (${hit.status}) 변경 알림이 등록돼 있어요. 확인하세요.`;
+  return { ...res, answer: `${res.answer.trim()}\n\n※ ${note}` };
 }
 
 export async function answerQuestion(req: ChatRequest, deps: AnswerDeps): Promise<ChatResponse> {
+  const res = await answerInner(req, deps);
+  return withAddedChangeNotes(res, req.question.trim(), deps.state);
+}
+
+async function answerInner(req: ChatRequest, deps: AnswerDeps): Promise<ChatResponse> {
   const question = req.question.trim();
 
   // 1) 개인정보 질문은 AI에 보내지도 않는다
   if (isPersonalInfoQuestion(question)) return respond({ answer: BLOCKED, mode: "blocked" });
 
   // 2) 데모 모드 / API 키 없음 → 고정 답
-  if (deps.demoMode) return demoResponse(question, "demo", req.focusEventId);
-  if (!deps.callLlm) return demoResponse(question, "fallback", req.focusEventId);
+  if (deps.demoMode) return demoResponse(question, "demo", req, deps);
+  if (!deps.callLlm) return demoResponse(question, "fallback", req, deps);
 
   // 3) 실제 AI
   try {
@@ -80,6 +101,6 @@ export async function answerQuestion(req: ChatRequest, deps: AnswerDeps): Promis
   } catch (e) {
     deps.onError?.(e);
     // 4) 실패하면 고정 답으로 대체
-    return demoResponse(question, "fallback", req.focusEventId);
+    return demoResponse(question, "fallback", req, deps);
   }
 }
