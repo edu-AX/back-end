@@ -1,0 +1,141 @@
+[
+  {
+    "id": "E-01",
+    "department": "창의적체험활동부",
+    "schoolLevel": "high",
+    "title": "동아리 조직·발대식",
+    "scope": "교내",
+    "eventDate": "2027-03-19",
+    "template": "IN_SCHOOL",
+    "participants": 540,
+    "handoverNotes": [
+      { "year": 2026, "note": "동아리 개설 신청은 2월 말까지 받아야 발대식 전에 배정이 끝남", "author": "전임자" }
+    ],
+    "stepStatus": { "plan": "done" },
+    "changeAlertIds": [],
+    "updatedBy": "전임자",
+    "updatedAt": "2027-02-20"
+  },
+  {
+    "id": "E-02",
+    "department": "창의적체험활동부",
+    "schoolLevel": "high",
+    "title": "1학년 1일형 현장체험학습",
+    "scope": "교외",
+    "eventDate": "2027-04-23",
+    "grade": 1,
+    "participants": 186,
+    "template": "OUT_DAY",
+    "officeRules": {
+      "office": "인천",
+      "safetyStaff": "학생 50명당 1명 (100명 이상)",
+      "sourceId": "G-INC-01"
+    },
+    "handoverNotes": [
+      { "year": 2026, "note": "버스 업체 배차 확인 문자는 전날 저녁에 한 번 더 받을 것", "author": "전임자" }
+    ],
+    "stepStatus": { "plan": "done" },
+    "changeAlertIds": ["C-02"],
+    "updatedBy": "전임자",
+    "updatedAt": "2027-02-20"
+  },
+  {
+    "id": "E-03",
+    "department": "창의적체험활동부",
+    "schoolLevel": "high",
+    "title": "체육대회",
+    "scope": "교내",
+    "eventDate": "2027-05-20",
+    "participants": 540,
+    "template": "IN_SCHOOL",
+    "handoverNotes": [
+      { "year": 2026, "note": "우천 시 강당 사용은 체육부와 3주 전에 미리 협의해 둘 것", "author": "전임자" }
+    ],
+    "stepStatus": {},
+    "changeAlertIds": ["C-01"],
+    "updatedBy": "전임자",
+    "updatedAt": "2027-02-20"
+  },
+  {
+    "id": "E-04",
+    "department": "창의적체험활동부",
+    "schoolLevel": "high",
+    "title": "진로체험 주간",
+    "scope": "교내",
+    "eventDate": "2027-07-05",
+    "participants": 540,
+    "template": "IN_SCHOOL",
+    "handoverNotes": [
+      { "year": 2026, "note": "외부 강사 섭외는 5월 안에 끝내야 일정이 맞음", "author": "전임자" }
+    ],
+    "stepStatus": {},
+    "changeAlertIds": ["C-01"],
+    "updatedBy": "전임자",
+    "updatedAt": "2027-02-20"
+  },
+  {
+    "id": "E-05",
+    "department": "창의적체험활동부",
+    "schoolLevel": "high",
+    "title": "1학년 수련활동 (숙박형)",
+    "scope": "교외",
+    "eventDate": "2027-10-13",
+    "grade": 1,
+    "participants": 186,
+    "template": "OUT_OVERNIGHT",
+    "officeRules": {
+      "office": "인천",
+      "consentRate": "학년 전체 학부모 80% 이상",
+      "safetyStaff": "학생 50명당 1명 (100명 이상)",
+      "sourceId": "G-INC-01"
+    },
+    "handoverNotes": [
+      { "year": 2026, "note": "수련원 인증 여부와 보험 가입 증명서를 계약 전에 받아 둘 것", "author": "전임자" }
+    ],
+    "stepStatus": {},
+    "changeAlertIds": ["C-02"],
+    "updatedBy": "전임자",
+    "updatedAt": "2027-02-20"
+  },
+  {
+    "id": "E-06",
+    "department": "창의적체험활동부",
+    "schoolLevel": "high",
+    "title": "학교 축제·동아리 발표회",
+    "scope": "교내",
+    "eventDate": "2027-12-17",
+    "participants": 540,
+    "template": "IN_SCHOOL",
+    "handoverNotes": [
+      { "year": 2026, "note": "무대 음향 업체는 11월 초에 예약이 다 차므로 10월에 확정할 것", "author": "전임자" }
+    ],
+    "stepStatus": {},
+    "changeAlertIds": ["C-01"],
+    "updatedBy": "전임자",
+    "updatedAt": "2027-02-20"
+  },
+  {
+    "id": "E-07",
+    "department": "창의적체험활동부",
+    "schoolLevel": "high",
+    "title": "2학년 수학여행 (숙박형)",
+    "scope": "교외",
+    "eventDate": "2027-05-12",
+    "grade": 2,
+    "participants": 180,
+    "template": "OUT_OVERNIGHT",
+    "officeRules": {
+      "office": "인천",
+      "consentRate": "학년 전체 학부모 80% 이상",
+      "safetyStaff": "학생 50명당 1명 (100명 이상)",
+      "sourceId": "G-INC-01"
+    },
+    "handoverNotes": [
+      { "year": 2026, "note": "작년 사전답사 때 숙소 비상구 확인이 늦었음. 사전답사 때 숙소 비상구·동선을 사진으로 남길 것", "author": "전임자" }
+    ],
+    "stepStatus": { "plan": "done", "consent": "todo" },
+    "changeAlertIds": ["C-02"],
+    "updatedBy": "전임자",
+    "updatedAt": "2027-02-20"
+  }
+]

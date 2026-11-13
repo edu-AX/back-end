@@ -1,0 +1,26 @@
+[
+  {
+    "id": "C-01",
+    "eventIds": ["E-03", "E-04", "E-06"],
+    "stepId": "record",
+    "title": "창체 학생부 기재 글자 수 축소",
+    "before": "진로활동 특기사항 700자 / 행동특성 및 종합의견 500자",
+    "after": "진로활동 특기사항 500자 / 행동특성 및 종합의견 300자 (전 학년)",
+    "status": "시행",
+    "source": "학생부 종합지원포털 Q&A (2026 기재요령)",
+    "guidelineId": "G-NAT-01",
+    "confirmed": false
+  },
+  {
+    "id": "C-02",
+    "eventIds": ["E-07", "E-02", "E-05"],
+    "stepId": null,
+    "title": "현장체험학습 교사 면책 기준 개정 추진",
+    "before": "안전조치 의무를 다한 경우 면책",
+    "after": "고의·중과실이 없으면 면책 (개정안)",
+    "status": "추진 중",
+    "source": "한국교육신문 (2026.8)",
+    "guidelineId": "G-NAT-03",
+    "confirmed": false
+  }
+]
