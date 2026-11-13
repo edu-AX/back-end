@@ -38,7 +38,8 @@ export const DEMO_ANSWERS: DemoAnswer[] = [
   },
   {
     key: "lastYear",
-    match: /(작년|전임|지난 ?해|예전).{0,12}(어떻게|뭐|무슨|문제|주의|했)/,
+    // "작년엔 어땠어?", "작년에 문제 있었어?", "작년 기록", 그리고 끝이 "작년엔?" 으로 끝나는 짧은 질문
+    match: /(작년|전임|지난 ?해|예전).{0,12}(어떻게|뭐|무슨|문제|주의|했|어땠|어때|있었|기록)|(작년|지난 ?해)(엔|에는|은|에)?\s*[?？]?\s*$/,
     answer:
       "작년 2학년 수학여행은 제주 2박 3일로 진행됐어요(176명). 전임 선생님이 꼭 남긴 건 두 가지예요. " +
       "① 사전답사 때 숙소 비상구 확인을 놓쳐 4월에 다시 확인했으니, 올해는 사전답사(3월 13일 마감) 때 비상구·동선을 사진으로 남기세요. " +
@@ -74,8 +75,12 @@ export const DEMO_ANSWERS: DemoAnswer[] = [
   },
 ];
 
-export const NO_LAST_YEAR = "이 행사는 작년 기록이 없어요. 올해가 첫 해예요.";
+export const NO_LAST_YEAR = "이 행사는 작년 기록이 없어요. 올해 처음 하는 행사예요.";
 export const NO_OFFICE_RULE = "이 행사에는 등록된 교육청 기준이 없어요. 학교 자체 계획을 따르세요.";
+/** 작년 질문인데 어떤 행사인지 모를 때 되묻기 */
+export const ASK_WHICH_EVENT = "어떤 행사의 작년 기록이 궁금하세요? 예: 수학여행, 체육대회";
+/** 프론트에만 있는 행사의 교육청 기준은 백엔드가 모르므로 카드로 안내 */
+export const SEE_CARD_RULE = "이 행사의 교육청 기준은 행사 카드의 '우리 교육청 기준' 칸에서 확인해 주세요.";
 
 /** 질문이 어느 규칙에 걸리는지 (행사와 무관) */
 export function findDemoAnswer(question: string): DemoAnswer | null {
@@ -159,9 +164,22 @@ export function buildDemoAnswer(
   if (!rule.perEvent) return base;
 
   const events = opts.events ?? allEvents;
-  const ev = detectEvent(question, events, opts.focusEventId);
-  if (!ev || ev.id === DEFAULT_EVENT_ID) return { ...base, eventId: DEFAULT_EVENT_ID };
+  const hit = detectEvent(question, events, opts.focusEventId);
 
+  // 작년 질문인데 행사를 모르면 수학여행으로 넘겨짚지 않고 되묻는다
+  if (!hit && rule.key === "lastYear") {
+    return { key: rule.key, answer: ASK_WHICH_EVENT, sourceIds: [], notFound: false };
+  }
+  // 동의율·안전요원은 행사를 모르면 기존 시연(수학여행) 답 유지
+  if (!hit || hit.id === DEFAULT_EVENT_ID) return { ...base, eventId: DEFAULT_EVENT_ID };
+
+  // 프론트에만 있는 행사 (백엔드 데이터 없음)
+  if (!hit.event) {
+    const answer = rule.key === "lastYear" ? NO_LAST_YEAR : SEE_CARD_RULE;
+    return { key: rule.key, answer, sourceIds: [], notFound: rule.key !== "lastYear", eventId: hit.id };
+  }
+
+  const ev = hit.event;
   const state = opts.state ?? EMPTY_CLIENT_STATE;
   if (rule.key === "lastYear") {
     const answer = lastYearAnswer(ev, opts.today, state);

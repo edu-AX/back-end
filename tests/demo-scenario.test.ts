@@ -21,7 +21,7 @@ describe("시연 질문 — DEMO_MODE 고정 답", () => {
 });
 
 // 작업 지시서 2 — 작업 A: 데모 모드도 질문 속 행사를 인식한다
-import { DEMO_ANSWERS } from "@/lib/chat/demo";
+import { ASK_WHICH_EVENT, DEMO_ANSWERS, NO_LAST_YEAR, SEE_CARD_RULE } from "@/lib/chat/demo";
 import { detectEvent } from "@/lib/chat/detect";
 import { events } from "@/lib/data";
 
@@ -86,10 +86,10 @@ describe("데모 모드 — 행사별 답 (작업 A 표)", () => {
   });
 
   it("작년 기록이 없는 행사 → 첫 해 안내", async () => {
-    const fresh = { ...events[2], id: "X-9", title: "과학 탐구 캠프", lastYear: undefined };
+    const fresh = { ...events[2], id: "X-9", title: "과학 탐구 대회", lastYear: undefined };
     const { buildDemoAnswer } = await import("@/lib/chat/demo");
-    const r = buildDemoAnswer("과학 탐구 캠프 작년에 뭐 했어?", { today: "2027-03-11", events: [...events, fresh] });
-    expect(r).toMatchObject({ key: "lastYear", answer: "이 행사는 작년 기록이 없어요. 올해가 첫 해예요.", sourceIds: ["X-9"] });
+    const r = buildDemoAnswer("과학 탐구 대회 작년에 뭐 했어?", { today: "2027-03-11", events: [...events, fresh] });
+    expect(r).toMatchObject({ key: "lastYear", answer: NO_LAST_YEAR, sourceIds: ["X-9"] });
   });
 
   it("어떤 규칙에도 안 맞으면 NOT_FOUND", async () => {
@@ -115,5 +115,77 @@ describe("detectEvent", () => {
 
   it("질문에 행사가 없으면 열린 카드", () => {
     expect(detectEvent("작년엔 어떻게 했어?", events, "E-04")?.id).toBe("E-04");
+  });
+
+  it.each([
+    ["메이커 코딩 캠프 동의율", "E-08"],
+    ["과학관 탐방 안전요원", "E-09"],
+    ["보건 직업인 특강", "E-10"],
+    ["독서 토론 축제", "E-11"],
+    ["인문학 축제", "E-11"],
+    ["모의 법정 준비", "E-12"],
+    ["초등학교 교육 봉사", "E-13"],
+  ])("프론트 전용 행사 %s → %s (백엔드 데이터 없음)", (q, id) => {
+    const hit = detectEvent(q, events);
+    expect(hit?.id).toBe(id);
+    expect(hit?.event).toBeNull();
+  });
+
+  it("'축제'는 독서·토론이 없으면 학교 축제(E-06)", () => {
+    expect(detectEvent("축제 작년엔 어땠어?", events)?.id).toBe("E-06");
+  });
+
+  it("열린 카드가 프론트 전용 행사여도 알아본다", () => {
+    expect(detectEvent("작년엔 어떻게 했어?", events, "E-12")).toMatchObject({ id: "E-12", event: null });
+  });
+});
+
+// 요청 3: 행사 인식 보완
+describe("데모 모드 — 행사 인식 보완", () => {
+  it("보건 직업인 특강 작년엔 어떻게 했어? → 기록 없음, 수학여행 얘기 없음", async () => {
+    const r = await ask("보건 직업인 특강 작년엔 어떻게 했어?");
+    expect(r.answer).toBe(NO_LAST_YEAR);
+    expect(r.answer).not.toContain("수학여행");
+  });
+
+  it("축제 작년엔 어땠어? → E-06", async () => {
+    const r = await ask("축제 작년엔 어땠어?");
+    expect(ids(r)).toEqual(["E-06"]);
+    expect(r.answer).toContain("축제");
+    expect(r.answer).not.toContain("수학여행");
+  });
+
+  it("독서 토론 축제 작년엔? → E-11 기록 없음", async () => {
+    const r = await ask("독서 토론 축제 작년엔?");
+    expect(r.answer).toBe(NO_LAST_YEAR);
+  });
+
+  it("작년엔 어떻게 했어? (열린 카드 없음) → 되묻기", async () => {
+    const r = await ask("작년엔 어떻게 했어?");
+    expect(r.answer).toBe(ASK_WHICH_EVENT);
+    expect(r.answer).not.toContain("수학여행 은");
+    expect(r.sources).toEqual([]);
+  });
+
+  it("작년 질문의 새 표현 (어땠·어때·있었·기록)", async () => {
+    for (const q of ["체육대회 작년엔 어땠어?", "체육대회 작년엔 어때?", "체육대회 작년에 사고 있었어?", "체육대회 작년 기록 보여줘"]) {
+      const r = await ask(q);
+      expect(ids(r), q).toEqual(["E-03"]);
+    }
+  });
+
+  it("프론트 전용 행사의 동의율 → 카드의 교육청 기준 안내 (지어내지 않음)", async () => {
+    const r = await ask("메이커 코딩 캠프 동의율 몇 %야?");
+    expect(r.answer).toBe(SEE_CARD_RULE);
+    expect(r.notFound).toBe(true);
+  });
+
+  it.each([
+    ["작년 수학여행 때 뭐 주의해야 했어?", TRIP_LAST_YEAR],
+    ["동의율 몇 % 넘어야 해?", TRIP_CONSENT],
+    ["안전요원 몇 명 필요해?", DEMO_ANSWERS.find((d) => d.key === "safetyStaff")!.answer],
+  ])("기존 시연 질문 회귀: %s", async (q, expected) => {
+    const r = await ask(q);
+    expect(r.answer).toBe(expected);
   });
 });
