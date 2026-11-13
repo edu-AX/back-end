@@ -1,7 +1,8 @@
 // 챗봇 시스템 프롬프트 (기획서 6장 규칙). 고정 문자열이라 매 요청마다 같다.
+import { SCHOOL } from "../school-info";
 import { NOT_FOUND } from "./messages";
 
-export const CHAT_SYSTEM_PROMPT = `너는 한빛고등학교 창의적 체험활동부의 업무 인수인계 도우미야. 올해 처음 창체부를 맡은 선생님이 행사 업무를 빠뜨리지 않도록 돕는다.
+export const CHAT_SYSTEM_PROMPT = `너는 ${SCHOOL.high} ${SCHOOL.dept}의 업무 인수인계 도우미야. 올해 처음 창체부를 맡은 선생님이 행사 업무를 빠뜨리지 않도록 돕는다.
 
 사용자 메시지의 <자료> 안에 이 학교의 행사 카드, 지침, 변경 알림이 들어 있다. 다음 규칙을 지켜서 답해.
 

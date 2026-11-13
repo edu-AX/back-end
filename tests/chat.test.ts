@@ -116,6 +116,14 @@ describe("answerQuestion", () => {
   });
 });
 
+describe("학교 이름", () => {
+  it("챗봇 시스템 프롬프트가 화면과 같은 학교 이름(lib/school-info.ts)을 쓴다", async () => {
+    const { CHAT_SYSTEM_PROMPT } = await import("@/lib/chat/prompt");
+    const { SCHOOL } = await import("@/lib/school-info");
+    expect(CHAT_SYSTEM_PROMPT.startsWith(`너는 ${SCHOOL.high} 창의적 체험활동부`)).toBe(true);
+  });
+});
+
 describe("자료·출처 칩", () => {
   it("칩 라벨과 상태", () => {
     const [ev, g, c] = toSourceRefs(["E-07", "G-INC-01", "C-02"], "E-07");
