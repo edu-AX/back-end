@@ -6,6 +6,9 @@ import { EMPTY_CLIENT_STATE, STEP_IDS } from "./types";
 
 const id = z.string().max(40);
 
+/** 템플릿 단계 id 또는 추가 단계 id("custom-…") */
+const anyStepId = z.union([z.enum(STEP_IDS), z.string().regex(/^custom-[\w가-힣-]{1,60}$/)]);
+
 export const ChangeAlertSchema = z.object({
   id,
   eventIds: z.array(id).max(30),
@@ -21,8 +24,16 @@ export const ChangeAlertSchema = z.object({
   url: z.string().max(500).optional(),
 });
 
+const CustomStepSchema = z.object({
+  id: z.string().regex(/^custom-[\w가-힣-]{1,60}$/),
+  label: z.string().min(1).max(100),
+  offsetDays: z.number().int().min(-400).max(400),
+  memo: z.string().max(300).optional(),
+  author: z.string().max(40).optional(),
+});
+
 export const StateSchema = z.object({
-  stepStatus: z.record(z.string().max(20), z.partialRecord(z.enum(STEP_IDS), z.enum(["todo", "done"]))).default({}),
+  stepStatus: z.record(z.string().max(20), z.record(anyStepId, z.enum(["todo", "done"]))).default({}),
   eventDateOverrides: z
     .record(z.string().max(20), z.string().refine(isDateString, "YYYY-MM-DD 형식이어야 해요"))
     .default({}),
@@ -36,7 +47,7 @@ export const StateSchema = z.object({
             year: z.number(),
             note: z.string().max(500),
             author: z.string().max(40).optional(),
-            stepId: z.enum(STEP_IDS).optional(),
+            stepId: anyStepId.optional(),
             important: z.boolean().optional(),
           }),
         )
@@ -45,9 +56,18 @@ export const StateSchema = z.object({
     .default({}),
   confirmedChangeIds: z.array(z.string().max(40)).max(50).default([]),
   addedChanges: z.array(ChangeAlertSchema).max(20).optional(),
+  // 체크리스트 직접 편집 (챗봇이 추가·수정·숨긴 단계까지 알고 답하도록)
+  customSteps: z.record(z.string().max(20), z.array(CustomStepSchema).max(30)).optional(),
+  stepEdits: z
+    .record(
+      z.string().max(20),
+      z.record(z.string().max(70), z.object({ label: z.string().max(100).optional(), offsetDays: z.number().int().min(-400).max(400).optional() })),
+    )
+    .optional(),
+  hiddenSteps: z.record(z.string().max(20), z.array(z.string().max(70)).max(30)).optional(),
 });
 
 /** 검증된 요청 state → ClientState (addedEvents 는 받지 않음) */
 export function toClientState(s: z.infer<typeof StateSchema> | undefined): ClientState {
-  return s ? { ...EMPTY_CLIENT_STATE, ...s } : EMPTY_CLIENT_STATE;
+  return s ? ({ ...EMPTY_CLIENT_STATE, ...s } as ClientState) : EMPTY_CLIENT_STATE;
 }

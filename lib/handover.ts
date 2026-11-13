@@ -2,7 +2,7 @@
 // 모두 순수 함수라 브라우저 컴포넌트에서 바로 쓸 수 있다.
 import { changes as allChanges, events as allEvents, getTemplate } from "./data";
 import { addYears, diffDays } from "./dates";
-import { effectiveEventDate, isChangeConfirmed, notesOf } from "./schedule";
+import { effectiveEventDate, isChangeConfirmed, notesOf, stepsOf } from "./schedule";
 import type {
   ChangeAlert,
   ClientState,
@@ -21,9 +21,10 @@ export function noteKey(eventId: string, note: HandoverNote): string {
   return note.id ?? `${eventId}|${note.year}|${note.stepId ?? "-"}|${note.note}`;
 }
 
-function stepLabel(event: EventCard, stepId?: string): string | undefined {
+function stepLabel(event: EventCard, stepId?: string, state: ClientState = EMPTY_CLIENT_STATE): string | undefined {
   if (!stepId) return undefined;
-  return getTemplate(event.template).steps.find((s) => s.id === stepId)?.label;
+  // 추가 단계·이름 수정까지 반영된 단계 목록에서 찾는다
+  return stepsOf(event, state).find((s) => s.id === stepId)?.label ?? getTemplate(event.template).steps.find((s) => s.id === stepId)?.label;
 }
 
 /**
@@ -48,7 +49,7 @@ export function buildHandoverBrief(
       eventId: ev.id,
       eventTitle: ev.title,
       stepId: n.stepId,
-      stepLabel: stepLabel(ev, n.stepId),
+      stepLabel: stepLabel(ev, n.stepId, state),
       note: n.note,
       year: n.year,
       author: n.author,
@@ -148,7 +149,8 @@ export function handoverCoverage(
 ): HandoverCoverage[] {
   return events.map((ev) => {
     const mine = notesOf(ev, state).filter((n) => n.year === year);
-    const steps = getTemplate(ev.template).steps;
+    // 추가한 단계도 기록할 단계에 포함, 숨긴 단계는 제외
+    const steps = stepsOf(ev, state);
     const recorded = new Set(mine.map((n) => n.stepId).filter(Boolean));
     const missing = steps.filter((s) => !recorded.has(s.id)).map((s) => ({ stepId: s.id, label: s.label }));
     const recordedSteps = steps.length - missing.length;

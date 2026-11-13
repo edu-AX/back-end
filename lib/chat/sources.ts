@@ -3,7 +3,7 @@ import { changes, changesWithAdded, events, getChange, getEvent, getGuideline, g
 import { formatDDay } from "../dates";
 import { computeSchedule } from "../schedule";
 import type { ClientState, DateString, SourceRef } from "../types";
-import { EMPTY_CLIENT_STATE } from "../types";
+import { EMPTY_CLIENT_STATE, isCustomStepId } from "../types";
 
 export function isKnownSourceId(id: string): boolean {
   return Boolean(getEvent(id) || getGuideline(id) || getChange(id));
@@ -89,7 +89,8 @@ export function buildContext(today: DateString, state: ClientState = EMPTY_CLIEN
         (e.participants ? `, 참가 ${e.participants}명` : ""),
       ...schedule.map(
         (s) =>
-          `  - ${s.label}: 마감 ${s.dueDate} (${formatDDay(s.daysLeft)}), ${s.state === "done" ? "완료" : "미완료"}`,
+          `  - ${s.label}: 마감 ${s.dueDate} (${formatDDay(s.daysLeft)}), ${s.state === "done" ? "완료" : "미완료"}` +
+          (s.isCustom ? ` [추가 단계${s.author ? ` · ${s.author}` : ""}${s.memo ? ` — ${s.memo}` : ""}]` : ""),
       ),
     ];
     if (e.officeRules) {
@@ -107,6 +108,7 @@ export function buildContext(today: DateString, state: ClientState = EMPTY_CLIEN
       lines.push(`  - 작년(${ly.year}) 실제 기록: 행사일 ${ly.eventDate}, ${ly.owner}. ${ly.summary}`);
       if (ly.partners?.length) lines.push(`    · 함께한 업체·기관: ${ly.partners.join(", ")}`);
       for (const s of schedule) {
+        if (isCustomStepId(s.id)) continue; // 작년 기록은 템플릿 단계에만
         const r = ly.steps[s.id];
         if (r) lines.push(`    · ${s.label}: ${r.actualDate ?? "날짜 기록 없음"}${r.memo ? ` — ${r.memo}` : ""}${r.hadIssue ? " (문제 있었음)" : ""}`);
       }

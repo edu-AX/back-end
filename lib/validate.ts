@@ -36,15 +36,26 @@ export function validateData(d: {
     const tpl = d.templates.find((t) => t.id === e.template);
     if (!tpl) errors.push(`행사 ${e.id}: 템플릿 ${e.template} 없음`);
     else if (tpl.scope !== e.scope) errors.push(`행사 ${e.id}: scope(${e.scope})와 템플릿 scope(${tpl.scope})가 다름`);
+    // 추가 단계(customSteps): id 는 "custom-" 으로 시작, 템플릿 단계·다른 추가 단계와 겹치면 안 됨
+    const customs = e.customSteps ?? [];
+    const customIds = new Set<string>();
+    for (const c of customs) {
+      if (!c.id.startsWith("custom-")) errors.push(`행사 ${e.id}: 추가 단계 id ${c.id} 는 "custom-" 으로 시작해야 함`);
+      if (customIds.has(c.id) || stepIds.has(c.id)) errors.push(`행사 ${e.id}: 추가 단계 id 중복: ${c.id}`);
+      customIds.add(c.id);
+      if (!c.label.trim()) errors.push(`행사 ${e.id}: 추가 단계 ${c.id} 이름이 비어 있음`);
+      if (!Number.isFinite(c.offsetDays)) errors.push(`행사 ${e.id}: 추가 단계 ${c.id} offsetDays 가 숫자가 아님`);
+    }
+    const hasStep = (k: string) => !!tpl?.steps.some((s) => s.id === k) || customIds.has(k);
     for (const k of Object.keys(e.stepStatus)) {
-      if (!tpl?.steps.some((s) => s.id === k)) errors.push(`행사 ${e.id}: stepStatus 키 ${k} 가 템플릿에 없음`);
+      if (!hasStep(k)) errors.push(`행사 ${e.id}: stepStatus 키 ${k} 가 템플릿·추가 단계에 없음`);
     }
     if (e.officeRules && !guidelineIds.has(e.officeRules.sourceId))
       errors.push(`행사 ${e.id}: officeRules.sourceId ${e.officeRules.sourceId} 지침 없음`);
     for (const c of e.changeAlertIds) if (!changeIds.has(c)) errors.push(`행사 ${e.id}: 변경 알림 ${c} 없음`);
     for (const n of e.handoverNotes) {
-      if (n.stepId && !tpl?.steps.some((s) => s.id === n.stepId))
-        errors.push(`행사 ${e.id}: 메모 "${n.note.slice(0, 10)}…"의 stepId ${n.stepId} 가 템플릿에 없음`);
+      if (n.stepId && !hasStep(n.stepId))
+        errors.push(`행사 ${e.id}: 메모 "${n.note.slice(0, 10)}…"의 stepId ${n.stepId} 가 템플릿·추가 단계에 없음`);
     }
     if (e.lastYear) {
       if (!isDateString(e.lastYear.eventDate)) errors.push(`행사 ${e.id}: lastYear.eventDate 형식 오류`);

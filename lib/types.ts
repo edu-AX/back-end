@@ -22,6 +22,22 @@ export const STEP_IDS = [
 ] as const;
 export type StepId = (typeof STEP_IDS)[number];
 
+/** 템플릿에 없는 단계 (전임자가 넘겨준 단계·내가 추가한 단계). id 는 "custom-…" */
+export type CustomStepId = `custom-${string}`;
+/** 템플릿 단계 + 추가 단계 */
+export type AnyStepId = StepId | CustomStepId;
+export const isCustomStepId = (id: string): id is CustomStepId => id.startsWith("custom-");
+
+export interface CustomStep {
+  id: CustomStepId;
+  label: string;
+  /** 행사일 기준. 음수 = 행사 전 */
+  offsetDays: number;
+  memo?: string;
+  /** "2026 담당 교사" / "나" */
+  author?: string;
+}
+
 export type TemplateId = "OUT_OVERNIGHT" | "OUT_DAY" | "IN_SCHOOL";
 
 // ---------- templates.json ----------
@@ -51,8 +67,8 @@ export interface HandoverNote {
   year: number;
   note: string;
   author?: string; // 가상 이름 또는 "전임자"
-  /** 이 메모가 걸리는 단계. 없으면 행사 전체에 대한 메모 */
-  stepId?: StepId;
+  /** 이 메모가 걸리는 단계(추가 단계 포함). 없으면 행사 전체에 대한 메모 */
+  stepId?: AnyStepId;
   /** true 면 "인수인계 받기" 화면의 핵심 주의점에 뜬다 */
   important?: boolean;
 }
@@ -92,7 +108,9 @@ export interface EventCard {
   handoverNotes: HandoverNote[];
   /** 작년 실제 기록. 없으면 올해가 첫 해 */
   lastYear?: LastYearRecord;
-  stepStatus: Partial<Record<StepId, StepState>>;
+  stepStatus: Partial<Record<AnyStepId, StepState>>;
+  /** 템플릿에 없는 단계 (업로드 초안에서 온 단계·전임자가 넘겨준 단계) */
+  customSteps?: CustomStep[];
   changeAlertIds: string[];
   /** 카드에 보여줄 "누가 언제 수정" (보안 설계: 수정 이력) */
   updatedBy?: string;
@@ -176,7 +194,7 @@ export interface UpdateCheckResult {
 // ---------- 프론트 localStorage 상태 ----------
 /** localStorage 키 "handover:v1" 에 이 모양 그대로 저장 */
 export interface ClientState {
-  stepStatus: Record<string, Partial<Record<StepId, StepState>>>; // eventId → 단계 상태
+  stepStatus: Record<string, Partial<Record<AnyStepId, StepState>>>; // eventId → 단계 상태 (추가 단계 포함)
   eventDateOverrides: Record<string, DateString>; // eventId → 바꾼 행사일
   extraNotes: Record<string, HandoverNote[]>; // eventId → 화면에서 추가한 메모
   confirmedChangeIds: string[];
@@ -188,6 +206,12 @@ export interface ClientState {
   acknowledgedNoteKeys?: string[];
   /** "인수 확인" 버튼을 누른 날. 없으면 아직 인수 전 → 첫 화면에 인수인계 받기 */
   handoverAcceptedAt?: DateString;
+  /** 체크리스트 직접 편집: eventId → 내가 추가한 단계 */
+  customSteps?: Record<string, CustomStep[]>;
+  /** eventId → 단계 id → 이름·마감 수정 (템플릿 단계·추가 단계 모두) */
+  stepEdits?: Record<string, Record<string, { label?: string; offsetDays?: number }>>;
+  /** eventId → 이 학교에선 안 하는 단계 id (숨김) */
+  hiddenSteps?: Record<string, string[]>;
 }
 export const EMPTY_CLIENT_STATE: ClientState = {
   stepStatus: {},
@@ -199,9 +223,15 @@ export const EMPTY_CLIENT_STATE: ClientState = {
 
 // ---------- 계산 결과 (lib/schedule.ts, lib/dashboard.ts) ----------
 export interface ScheduledStep {
-  id: StepId;
+  id: AnyStepId;
   label: string;
   offsetDays: number;
+  /** 템플릿에 없는 추가 단계면 true (author 와 memo 가 같이 온다) */
+  isCustom?: boolean;
+  author?: string;
+  memo?: string;
+  /** stepEdits 로 이름·마감을 고친 단계 */
+  edited?: boolean;
   dueDate: DateString;
   state: StepState;
   /** 오늘 기준 마감까지 남은 날 (음수면 지남) */
@@ -225,7 +255,7 @@ export interface HandoverPoint {
   key: string; // noteKey
   eventId: string;
   eventTitle: string;
-  stepId?: StepId;
+  stepId?: AnyStepId;
   stepLabel?: string;
   note: string;
   year: number;
@@ -289,7 +319,7 @@ export interface HandoverCoverage {
   totalSteps: number;
   noteCount: number;
   percent: number;
-  missingSteps: { stepId: StepId; label: string }[];
+  missingSteps: { stepId: AnyStepId; label: string }[];
 }
 
 export interface CalendarItem {
@@ -299,7 +329,7 @@ export interface CalendarItem {
   label: string;
   scope: Scope;
   color: "green" | "blue"; // 교내 green, 교외 blue
-  stepId?: StepId;
+  stepId?: AnyStepId;
   hasAlert: boolean;
   done?: boolean;
 }
@@ -353,6 +383,45 @@ export interface MaskResult {
 }
 export type MaskKind = "phone" | "studentId" | "rrn" | "email" | "name";
 
+/** 결과보고서에서 뽑은 예산 (원 단위, 문서에 없으면 null) */
+export interface DraftBudget {
+  total: number | null;
+  perStudent: number | null;
+  /** 학교회계 / 교육청 지원금 / 수익자부담 … */
+  sources: { type: string; amount: number | null }[];
+  /** 교통 / 숙박 / 식비 … */
+  items: { name: string; amount: number | null }[];
+  /** "버스 1대 추가로 예산 초과" 같은 한 줄 */
+  memo: string;
+}
+export interface DraftVenue {
+  name: string;
+  type: string;
+  memo: string;
+  /** 1~5, 문서에 없으면 null */
+  rating: number | null;
+}
+/** 고민 기록: 후보 비교와 선택·탈락 이유 (결과보고서엔 안 남는 것) */
+export interface DraftCandidate {
+  kind: "장소" | "업체" | "프로그램" | "일정";
+  name: string;
+  chosen: boolean;
+  /** 선택 이유 또는 탈락 이유 */
+  reason: string;
+}
+export interface DraftCareer {
+  tracks: string[];
+  subjects: string[];
+  creativeArea: string;
+  target: string;
+}
+/** 담당 소감 (이름 없이) */
+export interface DraftOwnerNote {
+  good: string;
+  problem: string;
+  nextYear: string;
+}
+
 export interface EventDraft {
   title: string;
   scope: Scope;
@@ -361,4 +430,25 @@ export interface EventDraft {
   steps: { stepId: StepId; actualDate: DateString | null; memo: string }[];
   cautions: string[];
   handoverNote: string;
+  // ---- 아래는 업로드 한 번으로 카드의 다른 탭까지 채우기 위한 선택 필드 (없으면 null·빈 배열) ----
+  budget?: DraftBudget | null;
+  venues?: DraftVenue[];
+  /** 고민 기록: 후보 비교·탈락 이유 */
+  candidates?: DraftCandidate[];
+  /** 해보니 불필요했던 과정 */
+  skipped?: string[];
+  /** 템플릿에 없는데 문서에 나온 단계 (예: 학운위 심의) */
+  customSteps?: CustomStep[];
+  career?: DraftCareer | null;
+  ownerNote?: DraftOwnerNote | null;
+}
+
+/** draftExtras(): 카드 밖(프론트 전용 탭)에 저장할 나머지 초안 데이터 */
+export interface DraftExtras {
+  budget: DraftBudget | null;
+  venues: DraftVenue[];
+  candidates: DraftCandidate[];
+  skipped: string[];
+  career: DraftCareer | null;
+  ownerNote: DraftOwnerNote | null;
 }
