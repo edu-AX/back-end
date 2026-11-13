@@ -59,7 +59,13 @@ describe("데모 모드 — 행사별 답 (작업 A 표)", () => {
     const r = await ask("수련활동 동의율 몇 %야?");
     expect(ids(r)).toContain("E-05");
     expect(r.answer).toContain("80%");
-    expect(r.answer).toContain("수련활동");
+    expect(r.answer).toContain("1학년 수련활동은 학년 전체 학부모 80% 이상의 동의가 있어야");
+  });
+
+  it("1일형 현장체험학습 안전요원 → 인원으로 필요 수 계산 (받침 없는 말엔 '는')", async () => {
+    const r = await ask("1일형 현장체험학습 안전요원 몇 명?");
+    expect(ids(r)).toContain("E-02");
+    expect(r.answer).toContain("1학년 1일형 현장체험학습은 186명이 참가하니 최소 4명이 필요해요");
   });
 
   it("체육대회 안전요원 몇 명? → 교육청 기준 없음(notFound)", async () => {

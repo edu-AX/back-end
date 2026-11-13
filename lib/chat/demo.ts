@@ -92,6 +92,14 @@ export interface DemoResult {
 }
 
 const officeName = (office: string) => (office === "인천" ? SCHOOL.office : `${office} 교육청`);
+/** "1학년 수련활동 (숙박형)" → "1학년 수련활동" */
+const shortTitle = (t: string) => t.replace(/\(.*?\)/g, "").trim();
+/** 받침에 따라 은/는 */
+const eunNeun = (w: string) => {
+  const c = w.charCodeAt(w.length - 1);
+  const batchim = c >= 0xac00 && c <= 0xd7a3 && (c - 0xac00) % 28 !== 0;
+  return `${w}${batchim ? "은" : "는"}`;
+};
 const mmdd = (s: string) => `${Number(s.slice(5, 7))}/${Number(s.slice(8, 10))}`;
 
 function lastYearAnswer(ev: EventCard, today: DateString, state: ClientState): string {
@@ -117,7 +125,7 @@ function consentAnswer(ev: EventCard): { answer: string; notFound: boolean } {
   if (!r?.consentRate) return { answer: NO_OFFICE_RULE, notFound: true };
   return {
     answer:
-      `${officeName(r.office)} 기준으로, ${ev.title}은(는) ${r.consentRate}가 동의해야 추진할 수 있어요. ` +
+      `${officeName(r.office)} 기준으로, ${eunNeun(shortTitle(ev.title))} ${r.consentRate}의 동의가 있어야 추진할 수 있어요. ` +
       `행사 카드의 '학생·학부모 의견 수렴 / 동의서' 단계에서 동의율을 집계해 두세요. 카드에는 명단 말고 숫자만 남기면 돼요.`,
     notFound: false,
   };
@@ -130,7 +138,7 @@ function safetyStaffAnswer(ev: EventCard): { answer: string; notFound: boolean }
   const m = r.safetyStaff.match(/(\d+)명당\s*(\d+)명/);
   if (m && ev.participants) {
     const n = Math.ceil(ev.participants / Number(m[1])) * Number(m[2]);
-    need = ` ${ev.title}은(는) ${ev.participants}명이 참가하니 최소 ${n}명이 필요해요.`;
+    need = ` ${eunNeun(shortTitle(ev.title))} ${ev.participants}명이 참가하니 최소 ${n}명이 필요해요.`;
   }
   return { answer: `${officeName(r.office)} 기준으로, 안전요원은 ${r.safetyStaff}이에요.${need}`, notFound: false };
 }
