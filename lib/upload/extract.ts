@@ -1,6 +1,7 @@
 // 업로드 파일에서 텍스트만 뽑는다. 파일은 메모리에서만 다루고 어디에도 저장하지 않는다.
 import "server-only";
 import { extractText, getDocumentProxy } from "unpdf";
+import { extractHwpText, HwpError } from "./hwp";
 import { extractHwpxText, HwpxError } from "./hwpx";
 
 export const MAX_FILE_BYTES = 4 * 1024 * 1024; // Vercel 요청 크기 제한(4.5MB)보다 작게
@@ -34,11 +35,15 @@ export async function extractTextFromFile(file: File): Promise<string> {
       throw new UploadError(e instanceof HwpxError ? e.message : "한글 파일(hwpx)에서 글자를 읽지 못했어요.");
     }
   } else if (name.endsWith(".hwp")) {
-    throw new UploadError("옛 형식(.hwp)은 읽지 못해요. 한글에서 '다른 이름으로 저장'으로 hwpx 또는 PDF로 저장해서 올려 주세요.", 415);
+    try {
+      text = extractHwpText(buf);
+    } catch (e) {
+      throw new UploadError(e instanceof HwpError ? e.message : "한글 파일(hwp)에서 글자를 읽지 못했어요. hwpx 또는 PDF로 저장해 올려 주세요.");
+    }
   } else if (name.endsWith(".txt") || file.type.startsWith("text/")) {
     text = new TextDecoder("utf-8").decode(buf);
   } else {
-    throw new UploadError("PDF, 한글(hwpx), txt 파일만 올릴 수 있어요.", 415);
+    throw new UploadError("PDF, 한글(hwp·hwpx), txt 파일만 올릴 수 있어요.", 415);
   }
 
   text = text.replace(/\r\n/g, "\n").trim();
