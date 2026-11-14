@@ -16,6 +16,7 @@ export function GET() {
     today: today(),
     demoMode: isDemoMode(),
     apiKeyConfigured: hasApiKey(),
+    aiProvider: "BAZE API Gateway",
     model: getModel(),
     counts: { events: events.length, templates: templates.length, guidelines: guidelines.length, changes: changes.length },
     unverifiedGuidelines: guidelines.filter((g) => g.needsVerification).map((g) => g.id),

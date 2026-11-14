@@ -14,13 +14,13 @@
                │ fetch  NEXT_PUBLIC_API_BASE_URL + /api/...
                ▼
 ┌────────────────────── edu-AX/back-end (포트 3001, 이 저장소) ─────────────┐
-│ /api/chat            인수인계 챗봇 (Gemini, 등록 자료 안에서만, 출처 칩, DEMO_MODE) │
+│ /api/chat            인수인계 챗봇 (BAZE,   등록 자료 안에서만, 출처 칩, DEMO_MODE) │
 │ /api/upload/extract  결과보고서 PDF/txt → 개인정보 마스킹 미리보기             │
 │ /api/upload/draft    마스킹 텍스트 → 행사 카드 초안 (작년 기록으로 넘어감)        │
 │ /api/health          상태 확인                                             │
 │ lib/  도메인 로직 원본 (타입·D-day 역산·대시보드·인수인계·마스킹·챗봇)           │
 │ data/ 샘플 데이터 원본 (행사·단계 템플릿·지침·변경 알림)                        │
-│ GEMINI_API_KEY 는 여기에만 (프론트에는 키가 없음)                              │
+│ BAZE_API_KEY 는 여기에만 (프론트에는 키가 없음)                                │
 └──────────────────────────────────────────────────────────────────────────┘
 ```
 
@@ -38,7 +38,7 @@
 - **담당자가 화면에서 "변경 알림에 추가"해야 반영돼요.** AI가 기준 값을 자동으로 덮어쓰지 않아요.
 - **지금은 시연용 스냅샷으로 동작해요:** `data/update-snapshots/moe-2026-05-28.json` (교육부 현장체험학습 교원 지원 방안).
   - 실제 수집은 `lib/updates/sources.ts`의 `lawApiAdapter`(국가법령정보센터 Open API)와 `pressListAdapter`(정책브리핑 교육부 부처뉴스)를 구현하면 돼요. 지금은 `not implemented`예요.
-  - `DEMO_MODE`이거나 키가 없으면 스냅샷 후보를 그대로 써요. 키가 있으면 Gemini가 요약을 읽고 후보를 만들고(zod 검증), 실패하면 스냅샷으로 대체해요.
+  - `DEMO_MODE`이거나 키가 없으면 스냅샷 후보를 그대로 써요. 키가 있으면 AI(BAZE)가 요약을 읽고 후보를 만들고(zod 검증), 실패하면 스냅샷으로 대체해요.
 - `// TODO: 정책브리핑 원문 링크` — 스냅샷 `url`이 비어 있어서 화면의 "원문 보기"가 비활성이에요. 원문 링크를 찾아서 `data/update-snapshots/moe-2026-05-28.json`의 `url`에 채우세요.
 - 스냅샷 `summary`는 직접 쓴 한 줄 요약이에요. **보도자료 원문 문장은 넣지 않아요.**
 
@@ -62,7 +62,7 @@
 
 ```bash
 npm install
-cp .env.example .env.local    # GEMINI_API_KEY 채우기 (없으면 DEMO_MODE=true)
+cp .env.example .env.local    # BAZE_API_KEY 채우기 (없으면 DEMO_MODE=true)
 npm test                      # 계산·마스킹·챗봇 규칙·데모 질문 테스트
 npm run dev                   # http://localhost:3001/api/health
 ```
@@ -73,8 +73,8 @@ npm run dev                   # http://localhost:3001/api/health
 
 | 이름 | 설명 |
 |---|---|
-| `GEMINI_API_KEY` | Gemini API 키. **서버에서만** 읽어요. |
-| `GEMINI_MODEL` | 비우면 `gemini-3.5-flash-lite` |
+| `BAZE_API_KEY` | BAZE API Gateway 키. **서버에서만** 읽어요. AI 호출은 `https://api.baze.co/v1/gateway/chat/completions/` (OpenAI 호환) 로 가요. |
+| `BAZE_MODEL` | 비우면 `gemini-3.5-flash-lite`. `claude-haiku-5-5`, `gpt-6-luna` 등 BAZE 모델 이름으로 바꿀 수 있어요. |
 | `DEMO_MODE` | `true`면 AI를 부르지 않고 고정 답을 줘요. 발표용이에요. |
 | `ALLOWED_ORIGINS` | 이 API를 부를 수 있는 프론트 주소(CORS). 쉼표로 여러 개 넣을 수 있고, 비우면 `http://localhost:3000`만 허용해요. 예: `https://edu-ax-front.vercel.app` |
 | `NEXT_PUBLIC_DEMO_TODAY` | 데모 기준일 `2027-03-11`. 프론트와 같은 값으로 두세요. |
